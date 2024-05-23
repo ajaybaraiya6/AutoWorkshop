@@ -1,0 +1,78 @@
+﻿@model IEnumerable<AutoWorkshop.Models.VehicleService>
+
+@{
+	ViewData["Title"] = "UpcomingServices";
+}
+
+<h1>UpcomingServices</h1>
+
+<form asp-action="Search" id="srvSearchForm">
+	<input id="dueDate" name="dueDate" placeholder="Search Service By Due Date" style="width:250px;" maxlength="20" />
+	<input type="submit" value="Search" class="btn btn-primary" />
+</form>
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				@Html.DisplayNameFor(model => model.ServiceDate)
+			</th>
+			<th>
+				@Html.DisplayNameFor(model => model.Slot)
+			</th>
+			<th>
+				@Html.DisplayNameFor(model => model.VehicleNumber)
+			</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var item in Model)
+		{
+			<tr>
+				<td>
+					@Html.DisplayFor(modelItem => item.ServiceDate)
+				</td>
+				<td>
+					@Html.DisplayFor(modelItem => item.SlotId)
+				</td>
+				<td>
+					@Html.DisplayFor(modelItem => item.VehicleNumber)
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>
+
+@section Scripts {
+	<script src="~/lib/jqueryui/jquery-ui.min.js"></script>
+	<script>
+		$(function () {
+			var today = new Date();
+			today.setHours(0, 0, 0, 0);
+			$('#dueDate').attr('min', today.toISOString().split('T')[0]);
+
+			$('#dueDate').datepicker({
+				dateFormat: 'yy-mm-dd',
+				beforeShowDay: function (date) {
+					var dayOfWeek = date.getDay();
+					var formattedDate = $.datepicker.formatDate('yy-mm-dd', date);
+					var dateString = date.toISOString().split('T')[0];
+					
+					if (date < today) {
+						return [false, "", "Unavailable"];
+					}
+
+					// I'm Keeping Sunday as Weekday off.
+					if (dayOfWeek === 0) {
+						return [false, "", "Sunday Off"];
+					}
+					return [true, "", ""];
+				}
+			});
+		});
+	</script>
+
+	<link rel="stylesheet" href="~/lib/jqueryui/jquery-ui.min.css" />
+}
+

@@ -1,0 +1,103 @@
+﻿@model AutoWorkshop.Models.VehicleService
+
+@{
+    ViewData["Title"] = "Index";
+    var dDates = ViewBag.DisabledDates;
+}
+
+<h1>Index</h1>
+
+<h4>VehicleService</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Index">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="VehicleNumber" class="control-label"></label><span style="color:red">*</span>
+                <select asp-for="VehicleNumber" class="form-control" asp-items="@(new SelectList(ViewBag.Vehicles, "VehicleNumber", "VehicleNumber"))">
+                    <option value="">-- Select a Vehicle --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label asp-for="ServiceDate" class="control-label"></label><span style="color:red">*</span>
+                <input name="ServiceDate" class="form-control" id="datePicker" />
+                <span asp-validation-for="ServiceDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SlotId" class="control-label"></label><span style="color:red">*</span>
+                <select asp-for="SlotId" class="form-control" asp-items="@(new SelectList(ViewBag.Slots, "Value", "Text"))">
+                    <option value="">-- Select a Slot --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="~/lib/jqueryui/jquery-ui.min.js"></script>
+    <script>
+        $(function () {
+            var disabledDates = @Html.Raw(Json.Serialize(dDates));
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            var formattedDisabledDates = disabledDates.map(function (dateStr) {
+                return new Date(dateStr).toISOString().split('T')[0];
+            });
+
+            $('#datePicker').attr('min', today.toISOString().split('T')[0]);
+
+            $('#datePicker').datepicker({
+                dateFormat: 'yy-mm-dd',
+                beforeShowDay: function (date) {
+                    var formattedDate = $.datepicker.formatDate('yy-mm-dd', date);
+                    var dateString = date.toISOString().split('T')[0];
+                    var dayOfWeek = date.getDay();
+
+                    if (date < today || formattedDisabledDates.includes(dateString)) {
+                        return [false, "", "Unavailable"];
+                    }
+
+                    // I'm Keeping Sunday as Weekday off.
+                    if (dayOfWeek === 0) {
+                        return [false, "", "Sunday Off"];
+                    }
+                    return [true, "", ""];
+                },
+                onSelect: function (dateText) {
+                    var selectedDate = $(this).datepicker('getDate');
+                    if (selectedDate) {
+                        // Adjusting the date to the correct local date
+                        var year = selectedDate.getFullYear();
+                        var month = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
+                        var day = ('0' + selectedDate.getDate()).slice(-2);
+                        var formattedDate = year + '-' + month + '-' + day;
+
+                        $.getJSON('/SlotBooking/GetSlotsByDate', { date: formattedDate }, function (slot) {
+                            var $slotDropdown = $('#SlotId');
+                            $slotDropdown.empty();
+                            $slotDropdown.append('<option value="">-- Select a Slot --</option>');
+                            $.each(slot, function (index, result) {
+                                $slotDropdown.append('<option value="' + result.value + '">' + result.text + '</option>');
+                            });
+                        });
+                    } else {
+                        $('#SlotId').empty();
+                        $('#SlotId').append('<option value="">-- Select a Slot --</option>');
+                    }
+                }
+            });
+        });
+    </script>
+    
+    <link rel="stylesheet" href="~/lib/jqueryui/jquery-ui.min.css" />
+}
